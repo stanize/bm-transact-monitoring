@@ -32,21 +32,26 @@ from bm_transact_lib import publish_gauge, log, build_base_labels
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-DEFAULT_MDPS = [
-    "mdp_tsm_status.py",
-    "mdp_concurrent_users.py",
-    "mdp_license_expiry_days.py",
-    "mdp_jboss_status.py",
-    "mdp_tsa_services_running.py",
-]
-
+MDP_CONFIG_PATH = os.path.join(SCRIPT_DIR, "mdp_config.json")
 
 def get_mdp_list() -> List[str]:
-    raw = os.environ.get("BM_MDP_SCRIPTS", "").strip()
-    if not raw:
-        return DEFAULT_MDPS
-    return [p.strip() for p in raw.split(",") if p.strip()]
+    if not os.path.exists(MDP_CONFIG_PATH):
+        log(f"ERROR: MDP config file not found: {MDP_CONFIG_PATH}")
+        raise SystemExit(2)
+
+    try:
+        with open(MDP_CONFIG_PATH, "r") as f:
+            config = json.load(f)
+    except Exception as e:
+        log(f"ERROR: Failed to read MDP config file: {MDP_CONFIG_PATH}: {e}")
+        raise SystemExit(2)
+
+    scripts = config.get("mdp_scripts")
+    if not isinstance(scripts, list) or not scripts:
+        log(f"ERROR: 'mdp_scripts' key missing or empty in {MDP_CONFIG_PATH}")
+        raise SystemExit(2)
+
+    return [s.strip() for s in scripts if s.strip()]
 
 
 def run_mdp(script_name: str) -> int:
