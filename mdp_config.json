@@ -1,0 +1,9 @@
+{
+  "mdp_scripts": [
+    "mdp_tsm_status.py",
+    "mdp_concurrent_users.py",
+    "mdp_license_expiry_days.py",
+    "mdp_jboss_status.py",
+    "mdp_tsa_services_running.py"
+  ]
+}
