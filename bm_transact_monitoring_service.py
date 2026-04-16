@@ -38,6 +38,7 @@ DEFAULT_MDPS = [
     "mdp_concurrent_users.py",
     "mdp_license_expiry_days.py",
     "mdp_jboss_status.py",
+    "mdp_tsa_services_running.py",
 ]
 
 
