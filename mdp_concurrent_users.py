@@ -5,19 +5,18 @@ MDP: Concurrent users
 - Reads COUNT(*) from public."F_OS_TOKEN"
 - Publishes a gauge metric with that count
 
-Env vars:
-- BM_USERS_METRIC_NAME (default: bm_poc_concurrent_users)
-
 Requires:
-- pgpass configured for DB access
-- bm_otel_publish_metric.py available (BM_OTEL_WRAPPER)
+  - pgpass configured for DB access
+  - bm_otel_publish_metric.py available (BM_OTEL_WRAPPER)
+
+Manual test:
+  python3 mdp_concurrent_users.py
 """
 
-import os
 import sys
 import subprocess
 
-from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge
+from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge, get_metric_name
 
 SQL_USERS = 'SELECT COUNT(*) FROM public."F_OS_TOKEN";'
 
@@ -33,7 +32,7 @@ def get_concurrent_users() -> int:
 
 
 def main() -> int:
-    metric_name = os.environ.get("BM_USERS_METRIC_NAME", "bm_poc_concurrent_users")
+    metric_name = get_metric_name(__file__)
 
     try:
         users = get_concurrent_users()
@@ -44,7 +43,7 @@ def main() -> int:
             build_base_labels() + [
                 "component=auth",
                 "metric=concurrent_users",
-                'table=F_OS_TOKEN',
+                "table=F_OS_TOKEN",
             ],
         )
         log("Concurrent users metric published successfully")
@@ -62,4 +61,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
