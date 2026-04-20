@@ -29,6 +29,12 @@
       "script": "mdp_business_date.py",
       "metric_name": "bm_poc_business_date",
       "enabled": "y"
+    },
+    {
+      "script": "mdp_transact_release.py",
+      "metric_name": "bm_poc_transact_release",
+      "enabled": "y"
     }
+    
   ]
 }
