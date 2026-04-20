@@ -19,7 +19,6 @@ Manual test:
 import os
 import sys
 import subprocess
-from datetime import datetime, timezone
 
 from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge
 
@@ -31,8 +30,7 @@ LIMIT 1;
 """.strip()
 
 
-def get_business_date() -> tuple[str, float]:
-    """Returns (raw_date_str, unix_timestamp)."""
+def get_business_date() -> int:
     log("Querying business date from F_DATES recid=LU0010001")
     raw = psql_scalar(SQL_BUSINESS_DATE).strip()
     log(f"Raw DB result (business_date): '{raw}'")
@@ -41,8 +39,7 @@ def get_business_date() -> tuple[str, float]:
         raise RuntimeError("Business date field is empty")
 
     try:
-        dt = datetime.strptime(raw, "%Y%m%d").replace(tzinfo=timezone.utc)
-        return raw, dt.timestamp()
+        return int(raw)
     except ValueError as e:
         raise RuntimeError(f"ERROR parsing business date '{raw}': {e}")
 
@@ -51,12 +48,11 @@ def main() -> int:
     metric_name = os.environ.get("BM_BUSINESS_DATE_METRIC_NAME", "bm_poc_business_date")
 
     try:
-        raw_date, ts = get_business_date()
-        log(f"Business date: {raw_date} -> unix timestamp: {ts}")
-        log(f"Publishing metric: {metric_name} value={ts}")
+        value = get_business_date()
+        log(f"Publishing metric: {metric_name} value={value}")
         publish_gauge(
             metric_name,
-            ts,
+            value,
             build_base_labels() + [
                 "component=dates",
                 "table=F_DATES",
