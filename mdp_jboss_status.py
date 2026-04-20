@@ -3,7 +3,7 @@
 
 MDP: JBoss service status
 - Checks JBoss service state via systemctl
-- Publishes a gauge metric (1=active, 0=inactive)
+- Publishes a gauge metric (1=active, 0=anything else)
 
 Requires:
   - bm_otel_publish_metric.py available (BM_OTEL_WRAPPER)
@@ -24,22 +24,20 @@ def main() -> int:
     log("Checking JBoss service status via systemctl")
 
     try:
-        try:
-            result = subprocess.check_output(
-                ["systemctl", "is-active", "jboss"],
-                text=True
-            ).strip()
-        except Exception as e:
-            log(f"ERROR checking JBoss status: {e}")
-            result = "unknown"
+        result = subprocess.run(
+            ["systemctl", "is-active", "jboss"],
+            text=True,
+            capture_output=True,
+        )
+        state = result.stdout.strip() or "unknown"
 
-        log(f"Raw JBoss status: '{result}'")
+        log(f"Raw JBoss status: '{state}'")
 
-        value = 1 if result == "active" else 0
+        value = 1 if state == "active" else 0
 
         labels = build_base_labels(source="system")
         labels.append("component=transact_monitoring_service")
-        labels.append(f"jboss_state={result}")
+        labels.append(f"jboss_state={state}")
 
         publish_gauge(metric_name, value, labels)
         log("JBoss status metric published successfully")
