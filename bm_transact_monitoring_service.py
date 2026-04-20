@@ -11,7 +11,7 @@ MDP discovery:
 - Reads mdp_scripts from mdp_config.json (must be in the same directory as this script).
 - Each entry has: script, metric_name, enabled.
 - If the config file is missing or unreadable, the service exits with an error.
-- Disabled entries (enabled: false) are skipped with a log message.
+- Disabled entries (enabled: "n") are skipped with a log message.
 - Each MDP script resolves its own metric name from the config via get_metric_name(__file__).
 
 Usage:
@@ -72,7 +72,7 @@ def main() -> int:
 
     if len(sys.argv) >= 2 and sys.argv[1] in ("--list", "-l"):
         for e in entries:
-            status = "enabled" if e["enabled"] else "disabled"
+            status = "enabled" if e["enabled"] == "y" else "disabled"
             print(f"{e['script']:<40} {e['metric_name']:<45} [{status}]")
         return 0
 
@@ -90,7 +90,7 @@ def main() -> int:
     log("Transact monitoring service started")
     rc = 0
     for entry in entries:
-        if not entry["enabled"]:
+        if entry["enabled"] == "n":
             log(f"SKIPPED (disabled): {entry['script']}")
             continue
         r = run_mdp(entry)
