@@ -6,9 +6,6 @@ MDP: TSA services running count
   is START or AUTO (case-insensitive)
 - Publishes a gauge metric with that count
 
-Env vars:
-  BM_TSA_SERVICES_METRIC_NAME  (default: bm_poc_tsa_services_running)
-
 Requires:
   - pgpass configured for DB access
   - bm_otel_publish_metric.py available (BM_OTEL_WRAPPER)
@@ -17,11 +14,10 @@ Manual test:
   python3 mdp_tsa_services_running.py
 """
 
-import os
 import sys
 import subprocess
 
-from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge
+from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge, get_metric_name
 
 SQL_TSA_SERVICES_RUNNING = """
 SELECT COUNT(*)
@@ -41,7 +37,7 @@ def get_tsa_services_running() -> int:
 
 
 def main() -> int:
-    metric_name = os.environ.get("BM_TSA_SERVICES_METRIC_NAME", "bm_poc_tsa_services_running")
+    metric_name = get_metric_name(__file__)
 
     try:
         count = get_tsa_services_running()
