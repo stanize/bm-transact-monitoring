@@ -5,18 +5,19 @@ MDP: TSM status
 - Reads public."F_TSA_SERVICE" recid='TSM'
 - Publishes a gauge metric (1=START, 0=STOP)
 
-Env vars:
-- BM_TSM_METRIC_NAME (default: bm_poc_tsm_status)
-
 Requires:
-- pgpass configured for DB access
-- bm_otel_publish_metric.py available (BM_OTEL_WRAPPER)
+  - pgpass configured for DB access
+  - bm_otel_publish_metric.py available (BM_OTEL_WRAPPER)
+
+Manual test:
+  python3 mdp_tsm_status.py
 """
 
+import os
 import sys
 import subprocess
 
-from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge
+from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge, get_metric_name
 
 SQL_TSM = """
 SELECT CASE UPPER(COALESCE(NULLIF((xmlrecord::json)->>'6',''),'STOP'))
@@ -37,7 +38,7 @@ def get_tsm_state() -> str:
 
 
 def main() -> int:
-    metric_name = __import__("os").environ.get("BM_TSM_METRIC_NAME", "bm_poc_tsm_status")
+    metric_name = get_metric_name(__file__)
 
     try:
         tsm_state = get_tsm_state()
@@ -50,7 +51,7 @@ def main() -> int:
             build_base_labels() + [
                 "component=tsm",
                 f"status={tsm_state}",
-                'table=F_TSA_SERVICE',
+                "table=F_TSA_SERVICE",
                 "recid=TSM",
             ],
         )
@@ -69,4 +70,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
