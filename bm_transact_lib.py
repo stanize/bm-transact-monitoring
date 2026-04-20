@@ -69,6 +69,9 @@ def _load_config() -> List[Dict]:
             if field not in entry:
                 log(f"ERROR: Entry {i} in config is missing field '{field}'")
                 raise SystemExit(2)
+        if entry["enabled"] not in ("y", "n"):
+            log(f"ERROR: Entry {i} ('{entry['script']}') has invalid 'enabled' value: '{entry['enabled']}'. Must be 'y' or 'n'.")
+            raise SystemExit(2)
 
     return scripts
 
