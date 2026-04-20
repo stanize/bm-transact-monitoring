@@ -8,13 +8,14 @@ Purpose:
 - Keep the OTEL publisher wrapper unchanged.
 
 MDP discovery:
-- By default runs the built-in list: mdp_tsm_status.py, mdp_concurrent_users.py
-- Override with env var BM_MDP_SCRIPTS as a comma-separated list of script filenames.
-  Example:
-    BM_MDP_SCRIPTS="mdp_tsm_status.py,mdp_concurrent_users.py,mdp_business_date_offset.py"
+- Reads mdp_scripts from mdp_config.json (must be in the same directory as this script).
+- Each entry has: script, metric_name, enabled.
+- If the config file is missing or unreadable, the service exits with an error.
+- Disabled entries (enabled: false) are skipped with a log message.
+- Each MDP script resolves its own metric name from the config via get_metric_name(__file__).
 
 Usage:
-  ./bm_transact_monitoring_service.py            # run all configured MDPs
+  ./bm_transact_monitoring_service.py            # run all enabled MDPs
   ./bm_transact_monitoring_service.py --list     # print MDP list and exit
   ./bm_transact_monitoring_service.py <mdp>      # run only one MDP (by filename)
 
@@ -25,42 +26,20 @@ Notes:
 
 import os
 import sys
-import json
 import subprocess
-from typing import List
+from typing import Dict
 
-from bm_transact_lib import publish_gauge, log, build_base_labels
+from bm_transact_lib import publish_gauge, log, build_base_labels, _load_config
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-MDP_CONFIG_PATH = os.path.join(SCRIPT_DIR, "mdp_config.json")
-
-def get_mdp_list() -> List[str]:
-    if not os.path.exists(MDP_CONFIG_PATH):
-        log(f"ERROR: MDP config file not found: {MDP_CONFIG_PATH}")
-        raise SystemExit(2)
-
-    try:
-        with open(MDP_CONFIG_PATH, "r") as f:
-            config = json.load(f)
-    except Exception as e:
-        log(f"ERROR: Failed to read MDP config file: {MDP_CONFIG_PATH}: {e}")
-        raise SystemExit(2)
-
-    scripts = config.get("mdp_scripts")
-    if not isinstance(scripts, list) or not scripts:
-        log(f"ERROR: 'mdp_scripts' key missing or empty in {MDP_CONFIG_PATH}")
-        raise SystemExit(2)
-
-    return [s.strip() for s in scripts if s.strip()]
 
 
-def run_mdp(script_name: str) -> int:
-    path = script_name
-    if not os.path.isabs(path):
-        path = os.path.join(SCRIPT_DIR, script_name)
+def run_mdp(entry: Dict) -> int:
+    script_name = entry["script"]
+    path = os.path.join(SCRIPT_DIR, script_name)
 
-    log(f"Running MDP: {script_name}")
+    log(f"Running MDP: {script_name} metric={entry['metric_name']}")
     try:
         subprocess.check_call([sys.executable, path])
         log(f"MDP OK: {script_name}")
@@ -85,32 +64,36 @@ def publish_heartbeat():
         log(f"ERROR publishing heartbeat: {e}")
 
 
-
 def main() -> int:
 
     publish_heartbeat()
 
-    mdps = get_mdp_list()
+    entries = _load_config()
 
     if len(sys.argv) >= 2 and sys.argv[1] in ("--list", "-l"):
-        for m in mdps:
-            print(m)
+        for e in entries:
+            status = "enabled" if e["enabled"] else "disabled"
+            print(f"{e['script']:<40} {e['metric_name']:<45} [{status}]")
         return 0
 
-    # If user provides an arg, run only that one.
+    # If user provides an arg, run only that one (regardless of enabled flag)
     if len(sys.argv) >= 2:
         target = sys.argv[1]
-        if target not in mdps:
+        matched = [e for e in entries if e["script"] == target]
+        if not matched:
             log(f"ERROR: '{target}' is not in configured MDP list")
             log("Use --list to see available MDPs")
             return 2
-        return run_mdp(target)
+        return run_mdp(matched[0])
 
-    # Run all
+    # Run all enabled
     log("Transact monitoring service started")
     rc = 0
-    for m in mdps:
-        r = run_mdp(m)
+    for entry in entries:
+        if not entry["enabled"]:
+            log(f"SKIPPED (disabled): {entry['script']}")
+            continue
+        r = run_mdp(entry)
         if r != 0:
             rc = r
     log("Transact monitoring service completed")
@@ -119,4 +102,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
