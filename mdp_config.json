@@ -1,9 +1,34 @@
 {
   "mdp_scripts": [
-    "mdp_tsm_status.py",
-    "mdp_concurrent_users.py",
-    "mdp_license_expiry_days.py",
-    "mdp_jboss_status.py",
-    "mdp_tsa_services_running.py"
+    {
+      "script": "mdp_tsm_status.py",
+      "metric_name": "bm_poc_tsm_status",
+      "enabled": true
+    },
+    {
+      "script": "mdp_concurrent_users.py",
+      "metric_name": "bm_poc_concurrent_users",
+      "enabled": true
+    },
+    {
+      "script": "mdp_license_expiry_days.py",
+      "metric_name": "bm_poc_license_days_remaining",
+      "enabled": true
+    },
+    {
+      "script": "mdp_jboss_status.py",
+      "metric_name": "bm_poc_jboss_status",
+      "enabled": true
+    },
+    {
+      "script": "mdp_tsa_services_running.py",
+      "metric_name": "bm_poc_tsa_services_running",
+      "enabled": true
+    },
+    {
+      "script": "mdp_business_date.py",
+      "metric_name": "bm_poc_business_date",
+      "enabled": true
+    }
   ]
 }
