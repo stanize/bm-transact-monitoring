@@ -3,10 +3,7 @@
 
 MDP: Business date
 - Reads field 1 (yyyymmdd) from public."F_DATES" where recid='LU0010001'
-- Converts to a Unix timestamp and publishes as a gauge metric
-
-Env vars:
-  BM_BUSINESS_DATE_METRIC_NAME  (default: bm_poc_business_date)
+- Publishes the raw yyyymmdd value as an integer gauge metric
 
 Requires:
   - pgpass configured for DB access
@@ -16,11 +13,10 @@ Manual test:
   python3 mdp_business_date.py
 """
 
-import os
 import sys
 import subprocess
 
-from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge
+from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge, get_metric_name
 
 SQL_BUSINESS_DATE = """
 SELECT (xmlrecord::json)->>'1'
@@ -45,7 +41,7 @@ def get_business_date() -> int:
 
 
 def main() -> int:
-    metric_name = os.environ.get("BM_BUSINESS_DATE_METRIC_NAME", "bm_poc_business_date")
+    metric_name = get_metric_name(__file__)
 
     try:
         value = get_business_date()
