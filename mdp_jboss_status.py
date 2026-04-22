@@ -12,16 +12,17 @@ Manual test:
   python3 mdp_jboss_status.py
 """
 
+import os
 import sys
 import subprocess
 
 from bm_transact_lib import log, publish_gauge, build_base_labels, get_metric_name
 
+SCRIPT_NAME = os.path.basename(__file__)
+
 
 def main() -> int:
     metric_name = get_metric_name(__file__)
-
-    log("Checking JBoss service status via systemctl")
 
     try:
         result = subprocess.run(
@@ -30,9 +31,6 @@ def main() -> int:
             capture_output=True,
         )
         state = result.stdout.strip() or "unknown"
-
-        log(f"Raw JBoss status: '{state}'")
-
         value = 1 if state == "active" else 0
 
         labels = build_base_labels(source="system")
@@ -40,12 +38,11 @@ def main() -> int:
         labels.append(f"jboss_state={state}")
 
         publish_gauge(metric_name, value, labels)
-        log("JBoss status metric published successfully")
+        log(f"{metric_name} = {value} [{SCRIPT_NAME}]")
         return 0
 
     except Exception as e:
-        log(f"ERROR: {e}")
-        print(f"ERROR: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: {e}")
         return 2
 
 
