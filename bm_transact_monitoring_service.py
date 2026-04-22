@@ -26,6 +26,7 @@ Notes:
 
 import os
 import sys
+import time
 import subprocess
 from typing import Dict
 
@@ -44,34 +45,33 @@ def run_mdp(entry: Dict) -> int:
     script_name = entry["script"]
     path = os.path.join(SCRIPT_DIR, script_name)
 
-    mlog(f"Running MDP: {script_name} metric={entry['metric_name']}")
     try:
         subprocess.check_call([sys.executable, path])
-        mlog(f"MDP OK: {script_name}")
         return 0
     except subprocess.CalledProcessError as e:
-        mlog(f"MDP FAILED: {script_name} rc={e.returncode}")
+        mlog(f"ERROR: MDP FAILED: {script_name} rc={e.returncode}")
         return e.returncode or 2
 
 
-def publish_heartbeat():
-    metric_name = os.getenv("BM_HEARTBEAT_METRIC_NAME", "bm_poc_monitoring_heartbeat")
-
-    try:
-        labels = build_base_labels(source="service")
-        labels.append("component=transact_monitoring_service")
-
-        mlog(f"Publishing heartbeat: {metric_name} = 1")
-        publish_gauge(metric_name, 1, labels)
-        mlog("Heartbeat published successfully")
-
-    except Exception as e:
-        mlog(f"ERROR publishing heartbeat: {e}")
+def publish_heartbeat(metric_name: str) -> None:
+    labels = build_base_labels(source="service")
+    labels.append("component=transact_monitoring_service")
+    publish_gauge(metric_name, 1, labels)
 
 
 def main() -> int:
+    pid = os.getpid()
+    start_time = time.monotonic()
 
-    publish_heartbeat()
+    mlog(f"---- Run started (pid={pid}) ----")
+
+    heartbeat_metric = os.getenv("BM_HEARTBEAT_METRIC_NAME", "bm_poc_monitoring_heartbeat")
+
+    try:
+        publish_heartbeat(heartbeat_metric)
+        mlog(f"Heartbeat published: {heartbeat_metric} = 1")
+    except Exception as e:
+        mlog(f"ERROR publishing heartbeat: {e}")
 
     entries = _load_config()
 
@@ -92,17 +92,28 @@ def main() -> int:
         return run_mdp(matched[0])
 
     # Run all enabled
-    mlog("Transact monitoring service started")
-    rc = 0
-    for entry in entries:
-        if entry["enabled"] == "n":
-            mlog(f"SKIPPED (disabled): {entry['script']}")
-            continue
+    enabled = [e for e in entries if e["enabled"] == "y"]
+    skipped = [e for e in entries if e["enabled"] == "n"]
+
+    for e in skipped:
+        mlog(f"SKIPPED (disabled): {e['script']}")
+
+    mlog(f"Running {len(enabled)} MDP(s) ...")
+
+    ok = 0
+    failed = 0
+    for entry in enabled:
         r = run_mdp(entry)
-        if r != 0:
-            rc = r
-    mlog("Transact monitoring service completed")
-    return rc
+        if r == 0:
+            ok += 1
+        else:
+            failed += 1
+
+    elapsed = int(time.monotonic() - start_time)
+    mlog(f"Monitoring completed ({ok} ok, {failed} failed)")
+    mlog(f"---- Run finished (pid={pid}, elapsed={elapsed}s) ----")
+
+    return 0 if failed == 0 else 2
 
 
 if __name__ == "__main__":
