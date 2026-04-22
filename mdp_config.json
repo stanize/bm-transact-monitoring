@@ -1,40 +1,11 @@
 {
   "mdp_scripts": [
-    {
-      "script": "mdp_tsm_status.py",
-      "metric_name": "bm_poc_tsm_status",
-      "enabled": "y"
-    },
-    {
-      "script": "mdp_concurrent_users.py",
-      "metric_name": "bm_poc_concurrent_users",
-      "enabled": "y"
-    },
-    {
-      "script": "mdp_license_expiry_days.py",
-      "metric_name": "bm_poc_license_days_remaining",
-      "enabled": "y"
-    },
-    {
-      "script": "mdp_jboss_status.py",
-      "metric_name": "bm_poc_jboss_status",
-      "enabled": "y"
-    },
-    {
-      "script": "mdp_tsa_services_running.py",
-      "metric_name": "bm_poc_tsa_services_running",
-      "enabled": "y"
-    },
-    {
-      "script": "mdp_business_date.py",
-      "metric_name": "bm_poc_business_date",
-      "enabled": "y"
-    },
-    {
-      "script": "mdp_transact_release.py",
-      "metric_name": "bm_poc_transact_release",
-      "enabled": "y"
-    }
-    
+    { "script": "mdp_tsm_status.py", "metric_name": "bm_poc_tsm_status", "enabled": "y"    },
+    { "script": "mdp_concurrent_users.py", "metric_name": "bm_poc_concurrent_users", "enabled": "y"    },
+    { "script": "mdp_license_expiry_days.py", "metric_name": "bm_poc_license_days_remaining", "enabled": "y"    },
+    { "script": "mdp_jboss_status.py", "metric_name": "bm_poc_jboss_status", "enabled": "y"    },
+    { "script": "mdp_tsa_services_running.py", "metric_name": "bm_poc_tsa_services_running", "enabled": "y"    },
+    { "script": "mdp_business_date.py", "metric_name": "bm_poc_business_date", "enabled": "y"    },
+    { "script": "mdp_transact_release.py", "metric_name": "bm_poc_transact_release", "enabled": "y"    }
   ]
 }
