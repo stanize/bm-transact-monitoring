@@ -29,11 +29,11 @@ WHERE recid='TSM'
 LIMIT 1;
 """.strip()
 
+SCRIPT_NAME = os.path.basename(__file__)
+
 
 def get_tsm_state() -> str:
-    log("Querying TSM state from database")
     out = psql_scalar(SQL_TSM)
-    log(f"Raw DB result (TSM): '{out}'")
     return "START" if out == "START" else "STOP"
 
 
@@ -44,7 +44,6 @@ def main() -> int:
         tsm_state = get_tsm_state()
         tsm_value = 1 if tsm_state == "START" else 0
 
-        log(f"Publishing TSM metric: {metric_name} value={tsm_value} status={tsm_state}")
         publish_gauge(
             metric_name,
             tsm_value,
@@ -55,16 +54,14 @@ def main() -> int:
                 "recid=TSM",
             ],
         )
-        log("TSM metric published successfully")
+        log(f"{metric_name} = {tsm_value} [{SCRIPT_NAME}]")
         return 0
 
     except subprocess.CalledProcessError as e:
-        log(f"ERROR executing command: {e}")
-        print(f"ERROR: command failed: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: command failed: {e}")
         return 2
     except Exception as e:
-        log(f"ERROR: {e}")
-        print(f"ERROR: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: {e}")
         return 2
 
 
