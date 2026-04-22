@@ -14,6 +14,7 @@ Manual test:
   python3 mdp_tsa_services_running.py
 """
 
+import os
 import sys
 import subprocess
 
@@ -25,11 +26,11 @@ FROM public."F_TSA_SERVICE"
 WHERE UPPER((xmlrecord::json)->>'6') IN ('START', 'AUTO');
 """.strip()
 
+SCRIPT_NAME = os.path.basename(__file__)
+
 
 def get_tsa_services_running() -> int:
-    log('Querying F_TSA_SERVICE count where SERVICE.CONTROL IN (START, AUTO)')
     out = psql_scalar(SQL_TSA_SERVICES_RUNNING)
-    log(f"Raw DB result (tsa_services_running): '{out}'")
     try:
         return int(out)
     except ValueError:
@@ -41,7 +42,6 @@ def main() -> int:
 
     try:
         count = get_tsa_services_running()
-        log(f"Publishing metric: {metric_name} value={count}")
         publish_gauge(
             metric_name,
             count,
@@ -51,16 +51,14 @@ def main() -> int:
                 "filter=SERVICE_CONTROL_START_AUTO",
             ],
         )
-        log("TSA services running metric published successfully")
+        log(f"{metric_name} = {count} [{SCRIPT_NAME}]")
         return 0
 
     except subprocess.CalledProcessError as e:
-        log(f"ERROR executing command: {e}")
-        print(f"ERROR: command failed: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: command failed: {e}")
         return 2
     except Exception as e:
-        log(f"ERROR: {e}")
-        print(f"ERROR: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: {e}")
         return 2
 
 
