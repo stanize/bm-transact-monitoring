@@ -14,6 +14,7 @@ Manual test:
   python3 mdp_transact_release.py
 """
 
+import os
 import re
 import sys
 import subprocess
@@ -27,20 +28,16 @@ WHERE recid='SYSTEM'
 LIMIT 1;
 """.strip()
 
+SCRIPT_NAME = os.path.basename(__file__)
+
 
 def get_transact_release() -> tuple[str, int]:
-    """Returns (raw_value, numeric_part). E.g. ('R24', 24)."""
-    log("Querying Transact release from F_SPF recid=SYSTEM field 8")
     raw = psql_scalar(SQL_TRANSACT_RELEASE).strip()
-    log(f"Raw DB result (transact_release): '{raw}'")
-
     if not raw:
         raise RuntimeError("Transact release field is empty")
-
     match = re.search(r"\d+", raw)
     if not match:
         raise RuntimeError(f"No numeric part found in release value: '{raw}'")
-
     return raw, int(match.group())
 
 
@@ -49,7 +46,6 @@ def main() -> int:
 
     try:
         raw, value = get_transact_release()
-        log(f"Publishing metric: {metric_name} value={value} release={raw}")
         publish_gauge(
             metric_name,
             value,
@@ -60,16 +56,14 @@ def main() -> int:
                 f"release={raw}",
             ],
         )
-        log("Transact release metric published successfully")
+        log(f"{metric_name} = {value} [{SCRIPT_NAME}]")
         return 0
 
     except subprocess.CalledProcessError as e:
-        log(f"ERROR executing command: {e}")
-        print(f"ERROR: command failed: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: command failed: {e}")
         return 2
     except Exception as e:
-        log(f"ERROR: {e}")
-        print(f"ERROR: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: {e}")
         return 2
 
 
