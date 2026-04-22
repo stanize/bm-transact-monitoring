@@ -41,9 +41,9 @@ VM = os.environ.get("BM_VM", os.uname().nodename)
 SERVICE = os.environ.get("BM_SERVICE", "transact")
 
 
-def log(msg: str) -> None:
+def log(msg: str, prefix: str = "MDP") -> None:
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}] {msg}")
+    print(f"[{ts}] [{prefix}] {msg}")
 
 
 def _load_config() -> List[Dict]:
