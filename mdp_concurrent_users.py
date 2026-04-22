@@ -13,6 +13,7 @@ Manual test:
   python3 mdp_concurrent_users.py
 """
 
+import os
 import sys
 import subprocess
 
@@ -20,11 +21,11 @@ from bm_transact_lib import log, psql_scalar, build_base_labels, publish_gauge, 
 
 SQL_USERS = 'SELECT COUNT(*) FROM public."F_OS_TOKEN";'
 
+SCRIPT_NAME = os.path.basename(__file__)
+
 
 def get_concurrent_users() -> int:
-    log('Querying concurrent users from public."F_OS_TOKEN"')
     out = psql_scalar(SQL_USERS)
-    log(f"Raw DB result (users): '{out}'")
     try:
         return int(out)
     except ValueError:
@@ -36,7 +37,6 @@ def main() -> int:
 
     try:
         users = get_concurrent_users()
-        log(f"Publishing users metric: {metric_name} value={users}")
         publish_gauge(
             metric_name,
             users,
@@ -46,16 +46,14 @@ def main() -> int:
                 "table=F_OS_TOKEN",
             ],
         )
-        log("Concurrent users metric published successfully")
+        log(f"{metric_name} = {users} [{SCRIPT_NAME}]")
         return 0
 
     except subprocess.CalledProcessError as e:
-        log(f"ERROR executing command: {e}")
-        print(f"ERROR: command failed: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: command failed: {e}")
         return 2
     except Exception as e:
-        log(f"ERROR: {e}")
-        print(f"ERROR: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: {e}")
         return 2
 
 
