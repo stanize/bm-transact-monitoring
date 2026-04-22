@@ -13,6 +13,7 @@ Manual test:
   python3 mdp_business_date.py
 """
 
+import os
 import sys
 import subprocess
 
@@ -25,19 +26,17 @@ WHERE recid='LU0010001'
 LIMIT 1;
 """.strip()
 
+SCRIPT_NAME = os.path.basename(__file__)
+
 
 def get_business_date() -> int:
-    log("Querying business date from F_DATES recid=LU0010001")
     raw = psql_scalar(SQL_BUSINESS_DATE).strip()
-    log(f"Raw DB result (business_date): '{raw}'")
-
     if not raw:
         raise RuntimeError("Business date field is empty")
-
     try:
         return int(raw)
     except ValueError as e:
-        raise RuntimeError(f"ERROR parsing business date '{raw}': {e}")
+        raise RuntimeError(f"Cannot parse business date '{raw}': {e}")
 
 
 def main() -> int:
@@ -45,7 +44,6 @@ def main() -> int:
 
     try:
         value = get_business_date()
-        log(f"Publishing metric: {metric_name} value={value}")
         publish_gauge(
             metric_name,
             value,
@@ -55,16 +53,14 @@ def main() -> int:
                 "recid=LU0010001",
             ],
         )
-        log("Business date metric published successfully")
+        log(f"{metric_name} = {value} [{SCRIPT_NAME}]")
         return 0
 
     except subprocess.CalledProcessError as e:
-        log(f"ERROR executing command: {e}")
-        print(f"ERROR: command failed: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: command failed: {e}")
         return 2
     except Exception as e:
-        log(f"ERROR: {e}")
-        print(f"ERROR: {e}", file=sys.stderr)
+        log(f"ERROR [{SCRIPT_NAME}]: {e}")
         return 2
 
 
