@@ -35,17 +35,22 @@ from bm_transact_lib import publish_gauge, log, build_base_labels, _load_config
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def mlog(msg: str) -> None:
+    """Monitoring service log — always prefixed with [MONITOR]."""
+    log(msg, prefix="MONITOR")
+
+
 def run_mdp(entry: Dict) -> int:
     script_name = entry["script"]
     path = os.path.join(SCRIPT_DIR, script_name)
 
-    log(f"Running MDP: {script_name} metric={entry['metric_name']}")
+    mlog(f"Running MDP: {script_name} metric={entry['metric_name']}")
     try:
         subprocess.check_call([sys.executable, path])
-        log(f"MDP OK: {script_name}")
+        mlog(f"MDP OK: {script_name}")
         return 0
     except subprocess.CalledProcessError as e:
-        log(f"MDP FAILED: {script_name} rc={e.returncode}")
+        mlog(f"MDP FAILED: {script_name} rc={e.returncode}")
         return e.returncode or 2
 
 
@@ -56,12 +61,12 @@ def publish_heartbeat():
         labels = build_base_labels(source="service")
         labels.append("component=transact_monitoring_service")
 
-        log(f"Publishing monitoring heartbeat metric: {metric_name} value=1")
+        mlog(f"Publishing heartbeat: {metric_name} = 1")
         publish_gauge(metric_name, 1, labels)
-        log("Heartbeat metric published successfully")
+        mlog("Heartbeat published successfully")
 
     except Exception as e:
-        log(f"ERROR publishing heartbeat: {e}")
+        mlog(f"ERROR publishing heartbeat: {e}")
 
 
 def main() -> int:
@@ -81,22 +86,22 @@ def main() -> int:
         target = sys.argv[1]
         matched = [e for e in entries if e["script"] == target]
         if not matched:
-            log(f"ERROR: '{target}' is not in configured MDP list")
-            log("Use --list to see available MDPs")
+            mlog(f"ERROR: '{target}' is not in configured MDP list")
+            mlog("Use --list to see available MDPs")
             return 2
         return run_mdp(matched[0])
 
     # Run all enabled
-    log("Transact monitoring service started")
+    mlog("Transact monitoring service started")
     rc = 0
     for entry in entries:
         if entry["enabled"] == "n":
-            log(f"SKIPPED (disabled): {entry['script']}")
+            mlog(f"SKIPPED (disabled): {entry['script']}")
             continue
         r = run_mdp(entry)
         if r != 0:
             rc = r
-    log("Transact monitoring service completed")
+    mlog("Transact monitoring service completed")
     return rc
 
 
