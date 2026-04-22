@@ -7,6 +7,7 @@
     { "script": "mdp_tsa_services_running.py", "metric_name": "bm_poc_tsa_services_running", "enabled": "y"    },
     { "script": "mdp_business_date.py", "metric_name": "bm_poc_business_date", "enabled": "y"    },
     { "script": "mdp_transact_release.py", "metric_name": "bm_poc_transact_release", "enabled": "y"    },
-    { "script": "mdp_https_availability.py", "metric_name": "bm_poc_https_availability", "enabled": "y" }
+    { "script": "mdp_https_availability.py", "metric_name": "bm_poc_https_availability", "enabled": "y" },
+    { "script": "mdp_eod_error_count.py", "metric_name": "bm_poc_eod_error_count", "enabled": "y" }
   ]
 }
