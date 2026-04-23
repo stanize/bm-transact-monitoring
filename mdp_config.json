@@ -13,6 +13,7 @@
     { "script": "mdp_cob_duration.py", "metric_name": "bm_poc_cob_duration", "enabled": "y" },
     { "script": "mdp_memory_used_mb.py",  "metric_name": "bm_poc_memory_used_mb",  "enabled": "y" },
     { "script": "mdp_memory_total_mb.py", "metric_name": "bm_poc_memory_total_mb", "enabled": "y" },
-    { "script": "mdp_cpu_usage_pct.py",   "metric_name": "bm_poc_cpu_usage_pct",   "enabled": "y" }
+    { "script": "mdp_cpu_usage_pct.py",   "metric_name": "bm_poc_cpu_usage_pct",   "enabled": "y" },
+    { "script": "mdp_ctmag_status.py", "metric_name": "bm_poc_ctmag_status", "enabled": "y" }
   ]
 }
