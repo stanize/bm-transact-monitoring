@@ -6,7 +6,7 @@ Shared helpers for Transact monitoring MDP scripts.
 Keeps the same env var contract as the original combined script:
 - DB_HOST, DB_NAME, DB_USER, BM_PSQL
 - BM_PYTHON, BM_OTEL_WRAPPER
-- BM_ENV, BM_VM, BM_SERVICE
+- BM_VM, BM_SERVICE
 
 Each MDP script should:
 - call get_metric_name(__file__) to resolve its metric name from the config
@@ -34,9 +34,9 @@ PYTHON = os.environ.get("BM_PYTHON", "/bin/python3")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WRAPPER = os.environ.get("BM_OTEL_WRAPPER", os.path.join(SCRIPT_DIR, "bm_otel_publish_metric.py"))
 MDP_CONFIG_PATH = os.path.join(SCRIPT_DIR, "mdp_config.json")
+ENV_CONFIG_PATH = os.path.join(SCRIPT_DIR, "env_config.json")
 
 # --- Stable labels ---
-ENV = os.environ.get("BM_ENV", "LOCALACN")
 VM = os.environ.get("BM_VM", os.uname().nodename)
 SERVICE = os.environ.get("BM_SERVICE", "transact")
 
@@ -44,6 +44,31 @@ SERVICE = os.environ.get("BM_SERVICE", "transact")
 def log(msg: str, prefix: str = "MDP") -> None:
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{ts}] [{prefix}] {msg}")
+
+
+def _resolve_env() -> str:
+    """
+    Resolve ENV label from env_config.json by matching current hostname.
+    Falls back to BM_ENV env var if hostname not found.
+    Raises SystemExit if neither is available.
+    """
+    hostname = os.uname().nodename
+
+    if os.path.exists(ENV_CONFIG_PATH):
+        try:
+            with open(ENV_CONFIG_PATH, "r") as f:
+                config = json.load(f)
+            for entry in config.get("env_map", []):
+                if entry.get("hostname") == hostname:
+                    return entry["env"]
+        except Exception as e:
+            log(f"WARNING: Failed to read env_config.json: {e} — using hostname as env label")
+
+    # Not found in map — use hostname as env label
+    return hostname
+
+
+ENV = _resolve_env()
 
 
 def _load_config() -> List[Dict]:
