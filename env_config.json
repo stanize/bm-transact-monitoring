@@ -1,0 +1,9 @@
+{
+  "env_map": [
+    { "hostname": "gcvmbmlocalacn01", "env": "LOCALACN" },
+    { "hostname": "gcvmbmtest01",     "env": "TEST" },
+    { "hostname": "gcvmbmtest02",     "env": "TEST" },
+    { "hostname": "gcvmbmtest03",     "env": "TEST" },
+    { "hostname": "gcvmbmtest04",     "env": "TEST" }
+  ]
+}
