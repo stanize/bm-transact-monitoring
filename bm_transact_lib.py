@@ -33,8 +33,8 @@ PYTHON = os.environ.get("BM_PYTHON", "/bin/python3")
 # --- Wrapper config ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WRAPPER = os.environ.get("BM_OTEL_WRAPPER", os.path.join(SCRIPT_DIR, "bm_otel_publish_metric.py"))
-MDP_CONFIG_PATH = os.path.join(SCRIPT_DIR, "mdp_config.json")
-ENV_CONFIG_PATH = os.path.join(SCRIPT_DIR, "env_config.json")
+MDP_CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "mdp_config.json")
+ENV_CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "env_config.json")
 
 # --- Stable labels ---
 VM = os.environ.get("BM_VM", os.uname().nodename)
@@ -49,8 +49,7 @@ def log(msg: str, prefix: str = "MDP") -> None:
 def _resolve_env() -> str:
     """
     Resolve ENV label from env_config.json by matching current hostname.
-    Falls back to BM_ENV env var if hostname not found.
-    Raises SystemExit if neither is available.
+    If hostname not found in map, uses hostname as env label.
     """
     hostname = os.uname().nodename
 
@@ -154,3 +153,5 @@ def publish_gauge(metric_name: str, value: float, labels: List[str]) -> None:
     """Publish gauge via the OTEL wrapper."""
     cmd = [PYTHON, WRAPPER, "gauge", metric_name, str(value)] + labels
     subprocess.check_call(cmd)
+
+

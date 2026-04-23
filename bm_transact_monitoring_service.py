@@ -8,7 +8,7 @@ Purpose:
 - Keep the OTEL publisher wrapper unchanged.
 
 MDP discovery:
-- Reads mdp_scripts from mdp_config.json (must be in the same directory as this script).
+- Reads mdp_scripts from config/mdp_config.json.
 - Each entry has: script, metric_name, enabled.
 - If the config file is missing or unreadable, the service exits with an error.
 - Disabled entries (enabled: "n") are skipped with a log message.
@@ -34,6 +34,7 @@ from bm_transact_lib import publish_gauge, log, build_base_labels, _load_config
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MDP_DIR = os.path.join(SCRIPT_DIR, "mdp")
 
 
 def mlog(msg: str) -> None:
@@ -43,10 +44,12 @@ def mlog(msg: str) -> None:
 
 def run_mdp(entry: Dict) -> int:
     script_name = entry["script"]
-    path = os.path.join(SCRIPT_DIR, script_name)
+    path = os.path.join(MDP_DIR, script_name)
 
     try:
-        subprocess.check_call([sys.executable, path])
+        env = os.environ.copy()
+        env["PYTHONPATH"] = SCRIPT_DIR + os.pathsep + env.get("PYTHONPATH", "")
+        subprocess.check_call([sys.executable, path], env=env)
         return 0
     except subprocess.CalledProcessError as e:
         mlog(f"ERROR: MDP FAILED: {script_name} rc={e.returncode}")
