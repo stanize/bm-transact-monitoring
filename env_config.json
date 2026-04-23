@@ -1,9 +1,34 @@
 {
   "env_map": [
     { "hostname": "gcvmbmlocalacn01", "env": "LOCALACN" },
-    { "hostname": "gcvmbmtest01",     "env": "TEST" },
-    { "hostname": "gcvmbmtest02",     "env": "TEST" },
-    { "hostname": "gcvmbmtest03",     "env": "TEST" },
-    { "hostname": "gcvmbmtest04",     "env": "TEST" }
+    { "hostname": "gcvmbmdev01",     "env": "DEV" },
+    { "hostname": "gcvmbmmztest01",     "env": "TEST" },
+    { "hostname": "gcvmbmmztest02",     "env": "TEST" },
+    { "hostname": "gcvmbmmztest03",     "env": "TEST" },
+    { "hostname": "gcvmbmmztest04",     "env": "TEST" },
+    { "hostname": "gcvmbmmzuat01",     "env": "UAT" },
+    { "hostname": "gcvmbmmzuat02",     "env": "UAT" },
+    { "hostname": "gcvmbmmzuat03",     "env": "UAT" },
+    { "hostname": "gcvmbmmzuat04",     "env": "UAT" },
+    { "hostname": "gcvmbmmzsim01",     "env": "SIM" },
+    { "hostname": "gcvmbmmzsim02",     "env": "SIM" },
+    { "hostname": "gcvmbmmzsim03",     "env": "SIM" },
+    { "hostname": "gcvmbmmzsim04",     "env": "SIM" },
+    { "hostname": "gcvmbmzapre01",     "env": "PRE" },
+    { "hostname": "gcvmbmzapre02",     "env": "PRE" },
+    { "hostname": "gcvmbmzapre03",     "env": "PRE" },
+    { "hostname": "gcvmbmzapre04",     "env": "PRE" },
+    { "hostname": "gcvmbmzcpre05",     "env": "PRE" },
+    { "hostname": "gcvmbmzcpre06",     "env": "PRE" },
+    { "hostname": "gcvmbmzcpre07",     "env": "PRE" },
+    { "hostname": "gcvmbmzcpre08",     "env": "PRE" },
+    { "hostname": "gcvmbmzapro01",     "env": "PRO" },
+    { "hostname": "gcvmbmzapro02",     "env": "PRO" },
+    { "hostname": "gcvmbmzapro03",     "env": "PRO" },
+    { "hostname": "gcvmbmzapro04",     "env": "PRO" },
+    { "hostname": "gcvmbmzcpro05",     "env": "PRO" },
+    { "hostname": "gcvmbmzcpro06",     "env": "PRO" },
+    { "hostname": "gcvmbmzcpro07",     "env": "PRO" },
+    { "hostname": "gcvmbmzcpro08",     "env": "PRO" }  
   ]
 }
