@@ -3,5 +3,6 @@
   "db_name":  "BANCA",
   "db_user":  "t24",
   "psql":     "/bin/psql",
-  "python":   "/bin/python3"
+  "python":   "/bin/python3",
+  "service":  "transact"
 }
