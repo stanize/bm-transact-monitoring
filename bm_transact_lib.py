@@ -18,9 +18,11 @@ db_config.json required keys:
   db_user     PostgreSQL user  (pgpass supplies the password)
   psql        Absolute path to psql binary
   python      Absolute path to python3 binary
-  wrapper     Absolute path to bm_otel_publish_metric.py
-  vm          VM label reported in metrics
   service     Service label reported in metrics
+
+Runtime-derived (not config values):
+  vm          Taken from os.uname().nodename — always the current machine
+  wrapper     Always co-located: <script_dir>/bm_otel_publish_metric.py
 
 Each MDP script should:
   - call get_metric_name(__file__) to resolve its metric name from the config
@@ -56,7 +58,7 @@ def log(msg: str, prefix: str = "MDP") -> None:
 # ---------------------------------------------------------------------------
 # Config loaders — all raise SystemExit(2) on any failure
 # ---------------------------------------------------------------------------
-_DB_REQUIRED_KEYS = ("db_host", "db_name", "db_user", "psql", "python", "wrapper", "vm", "service")
+_DB_REQUIRED_KEYS = ("db_host", "db_name", "db_user", "psql", "python", "service")
 
 
 def _load_db_config() -> Dict[str, str]:
@@ -126,16 +128,16 @@ def _load_mdp_config() -> Dict:
 # ---------------------------------------------------------------------------
 # Module-level config — loaded once at import time, fail-fast on any error
 # ---------------------------------------------------------------------------
-_db_cfg  = _load_db_config()
+_db_cfg = _load_db_config()
 
 DB_HOST = _db_cfg["db_host"]
 DB_NAME = _db_cfg["db_name"]
 DB_USER = _db_cfg["db_user"]
 PSQL    = _db_cfg["psql"]
 PYTHON  = _db_cfg["python"]
-WRAPPER = _db_cfg["wrapper"]
-VM      = _db_cfg["vm"]
 SERVICE = _db_cfg["service"]
+VM      = os.uname().nodename                                     # always the current machine — not a config value
+WRAPPER = os.path.join(SCRIPT_DIR, "bm_otel_publish_metric.py")  # always co-located — not a config value
 
 
 # ---------------------------------------------------------------------------
