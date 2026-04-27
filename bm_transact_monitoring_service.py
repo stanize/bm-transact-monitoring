@@ -8,6 +8,7 @@ Purpose:
 - Execute all enabled MDP scripts on a fixed interval (configured in mdp_config.json).
 - Publish a heartbeat metric on every cycle.
 - Log to logs/bm-transact-monitoring.log with rotation.
+- Capture and log all MDP script output into the same log file.
 
 MDP discovery:
 - Reads mdp_scripts from config/mdp_config.json.
@@ -71,12 +72,31 @@ def run_mdp(entry: Dict) -> int:
     try:
         env = os.environ.copy()
         env["PYTHONPATH"] = SCRIPT_DIR + os.pathsep + env.get("PYTHONPATH", "")
-        subprocess.check_call([sys.executable, path], env=env)
-        log(f"{script_name} completed (rc=0)", prefix="MONITOR")
-        return 0
-    except subprocess.CalledProcessError as e:
-        log_error(f"MDP FAILED: {script_name} rc={e.returncode}", prefix="MONITOR")
-        return e.returncode or 2
+        result = subprocess.run(
+            [sys.executable, path],
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        # Log stdout line by line under the MDP's own name as prefix
+        for line in result.stdout.splitlines():
+            if line.strip():
+                log(line.strip(), prefix=script_name)
+        # Log stderr as errors
+        for line in result.stderr.splitlines():
+            if line.strip():
+                log_error(line.strip(), prefix=script_name)
+
+        if result.returncode == 0:
+            log(f"{script_name} completed (rc=0)", prefix="MONITOR")
+            return 0
+        else:
+            log_error(f"MDP FAILED: {script_name} rc={result.returncode}", prefix="MONITOR")
+            return result.returncode or 2
+
+    except Exception as e:
+        log_error(f"MDP FAILED: {script_name} raised an exception: {e}", prefix="MONITOR")
+        return 2
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +197,7 @@ def main() -> int:
             if _shutdown_requested:
                 break
 
-            elapsed  = time.monotonic() - cycle_start
+            elapsed   = time.monotonic() - cycle_start
             sleep_for = interval - elapsed
 
             if sleep_for <= 0:
