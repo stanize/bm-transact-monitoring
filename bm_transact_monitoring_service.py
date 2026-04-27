@@ -30,7 +30,7 @@ import time
 import subprocess
 from typing import Dict
 
-from bm_transact_lib import publish_gauge, log, build_base_labels, _load_config
+from bm_transact_lib import publish_gauge, log, build_base_labels, _load_config, get_heartbeat_metric_name
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -68,7 +68,7 @@ def main() -> int:
 
     mlog(f"---- Run started (pid={pid}) ----")
 
-    heartbeat_metric = os.getenv("BM_HEARTBEAT_METRIC_NAME", "bm_poc_monitoring_heartbeat")
+    heartbeat_metric = get_heartbeat_metric_name()
 
     try:
         publish_heartbeat(heartbeat_metric)
