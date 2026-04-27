@@ -6,6 +6,8 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
+User=transactuser
+Group=transactuser
 ExecStart=/bin/python3 /mnt/temenos/T24/bnk/t24scripts/transact_monitoring/bm_transact_monitoring_service.py
 WorkingDirectory=/mnt/temenos/T24/bnk/t24scripts/transact_monitoring
 Restart=on-failure
