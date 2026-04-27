@@ -19,7 +19,7 @@ https://bancamarch.ghe.com/BM-LUX/temenos-monitoring
 
 ## 2. Configure
 
-Ensure the files under `config/` to match the target environment:
+Ensure the files under `config/` match the target environment:
 
 | File | What to set |
 |---|---|
@@ -88,6 +88,10 @@ sudo systemctl restart transact-monitoring
 sudo systemctl disable transact-monitoring
 
 # Check recent logs
+journalctl -u transact-monitoring --since "1 hour ago"
+```
+
+---
 
 ## Troubleshooting
 
@@ -102,5 +106,3 @@ sudo systemctl start transact-monitoring
 ```
 
 The service will recreate the file with the correct ownership.
-journalctl -u transact-monitoring --since "1 hour ago"
-```
