@@ -7,7 +7,7 @@ Validates that all config files, binaries, DB connectivity, OTEL network
 reachability, and MDP scripts are in order before the service is started.
 
 Usage:
-  python3 bm_preflight.py
+  python3 bm_transact_monitoring_preflight.py
 
 Output:
   - Printed to terminal with colour-coded results
@@ -97,6 +97,15 @@ def section_header(title: str) -> None:
     print(line)
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     _log_lines.append(f"\n[{ts}] --- {title} ---")
+
+
+def pause() -> None:
+    """Wait for user to press Enter before continuing to the next section."""
+    try:
+        input(f"\n  {cyan('Press Enter to continue...')}")
+    except (EOFError, KeyboardInterrupt):
+        # Non-interactive or Ctrl+C — just continue without pausing
+        print()
 
 
 # ---------------------------------------------------------------------------
@@ -527,10 +536,15 @@ def main() -> int:
     _log_lines.append(f"Time : {ts}")
 
     configs = check_config_files()
+    pause()
     check_binaries(configs)
+    pause()
     check_database(configs)
+    pause()
     check_otel(configs)
+    pause()
     check_mdp_scripts(configs)
+    pause()
 
     rc = print_summary()
     write_log()
