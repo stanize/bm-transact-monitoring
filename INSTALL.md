@@ -88,5 +88,19 @@ sudo systemctl restart transact-monitoring
 sudo systemctl disable transact-monitoring
 
 # Check recent logs
+
+## Troubleshooting
+
+### PermissionError on log file at startup
+
+If the service fails immediately with a permission error on the log file,
+it was likely created by root during a previous test run. Fix it with:
+
+```bash
+sudo rm /mnt/temenos/T24/bnk/t24scripts/transact_monitoring/logs/bm-transact-monitoring.log
+sudo systemctl start transact-monitoring
+```
+
+The service will recreate the file with the correct ownership.
 journalctl -u transact-monitoring --since "1 hour ago"
 ```
