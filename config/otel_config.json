@@ -1,0 +1,5 @@
+{
+  "endpoint":        "http://172.29.2.8:4317",
+  "service_name":    "bm-metrics-publisher",
+  "export_interval_ms": 1000
+}

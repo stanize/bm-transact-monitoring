@@ -1,0 +1,7 @@
+{
+  "db_host":  "T24-DB",
+  "db_name":  "BANCA",
+  "db_user":  "t24",
+  "psql":     "/bin/psql",
+  "python":   "/bin/python3"
+}
