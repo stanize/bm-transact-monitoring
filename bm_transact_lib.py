@@ -9,7 +9,7 @@ if a required config file is missing, unreadable, or incomplete the
 process exits with rc=2 immediately.
 
   config/db_config.json   — DB connectivity, tool paths, service identity
-  config/mdp_config.json  — MDP script registry and heartbeat metric name
+  config/mdp_config.json  — MDP script registry, schedule, logging, heartbeat
   config/env_config.json  — hostname → ENV label map
 
 db_config.json required keys:
@@ -33,6 +33,8 @@ No OTEL logic lives here (it delegates to bm_otel_publish_metric.py).
 """
 
 import json
+import logging
+import logging.handlers
 import os
 import subprocess
 from datetime import datetime
@@ -45,14 +47,80 @@ SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
 DB_CONFIG_PATH  = os.path.join(SCRIPT_DIR, "config", "db_config.json")
 MDP_CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "mdp_config.json")
 ENV_CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "env_config.json")
+LOG_DIR         = os.path.join(SCRIPT_DIR, "logs")
+LOG_PATH        = os.path.join(LOG_DIR, "bm-transact-monitoring.log")
+
+# ---------------------------------------------------------------------------
+# AUDIT level — sits above CRITICAL (50), can never be filtered out
+# ---------------------------------------------------------------------------
+AUDIT_LEVEL = 60
+logging.addLevelName(AUDIT_LEVEL, "AUDIT")
+
+_logger = logging.getLogger("bm_transact")
+
+
+def audit(msg: str) -> None:
+    """Log at AUDIT level — always written regardless of configured log level."""
+    _logger.log(AUDIT_LEVEL, msg)
 
 
 # ---------------------------------------------------------------------------
-# Logging
+# Logging setup — called once by the service at startup
+# ---------------------------------------------------------------------------
+def setup_logging(level_name: str, max_bytes: int, backup_count: int) -> None:
+    """
+    Initialise logging to both a rotating file and stdout.
+    Called once at service startup after config is loaded.
+    """
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    level = getattr(logging, level_name.upper(), logging.INFO)
+
+    formatter = logging.Formatter(
+        fmt="[%(asctime)s] [%(levelname)-7s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Rotating file handler
+    file_handler = logging.handlers.RotatingFileHandler(
+        LOG_PATH,
+        maxBytes=max_bytes,
+        backupCount=backup_count,
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)  # file always gets everything
+
+    # Stdout handler — respects configured level
+    stdout_handler = logging.StreamHandler()
+    stdout_handler.setFormatter(formatter)
+    stdout_handler.setLevel(level)
+
+    # AUDIT always goes to both — handled by level being above all filters
+    root = logging.getLogger("bm_transact")
+    root.setLevel(logging.DEBUG)  # let handlers decide what to filter
+    root.addHandler(file_handler)
+    root.addHandler(stdout_handler)
+
+
+# ---------------------------------------------------------------------------
+# Logging helpers
 # ---------------------------------------------------------------------------
 def log(msg: str, prefix: str = "MDP") -> None:
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{ts}] [{prefix}] {msg}")
+    """
+    General log — routes through Python logging at INFO level.
+    prefix is embedded in the message to preserve existing call signatures
+    across all MDP scripts.
+    """
+    _logger.info("[%s] %s", prefix, msg)
+
+
+def log_warning(msg: str, prefix: str = "MDP") -> None:
+    _logger.warning("[%s] %s", prefix, msg)
+
+
+def log_error(msg: str, prefix: str = "MDP") -> None:
+    _logger.error("[%s] %s", prefix, msg)
 
 
 # ---------------------------------------------------------------------------
@@ -68,19 +136,19 @@ def _load_db_config() -> Dict[str, str]:
     or if any required key is absent or blank.
     """
     if not os.path.exists(DB_CONFIG_PATH):
-        log(f"ERROR: db_config.json not found: {DB_CONFIG_PATH}")
+        print(f"ERROR: db_config.json not found: {DB_CONFIG_PATH}")
         raise SystemExit(2)
 
     try:
         with open(DB_CONFIG_PATH, "r") as f:
             cfg = json.load(f)
     except Exception as e:
-        log(f"ERROR: Failed to parse db_config.json: {e}")
+        print(f"ERROR: Failed to parse db_config.json: {e}")
         raise SystemExit(2)
 
     missing = [k for k in _DB_REQUIRED_KEYS if not cfg.get(k)]
     if missing:
-        log(f"ERROR: db_config.json is missing required key(s): {', '.join(missing)}")
+        print(f"ERROR: db_config.json is missing required key(s): {', '.join(missing)}")
         raise SystemExit(2)
 
     return cfg
@@ -90,36 +158,57 @@ def _load_mdp_config() -> Dict:
     """
     Load and validate config/mdp_config.json.
     Raises SystemExit(2) if the file is missing, unreadable, corrupt,
-    or if the mdp_scripts list is absent/empty/malformed.
+    or if any required key is absent or invalid.
     """
     if not os.path.exists(MDP_CONFIG_PATH):
-        log(f"ERROR: mdp_config.json not found: {MDP_CONFIG_PATH}")
+        print(f"ERROR: mdp_config.json not found: {MDP_CONFIG_PATH}")
         raise SystemExit(2)
 
     try:
         with open(MDP_CONFIG_PATH, "r") as f:
             config = json.load(f)
     except Exception as e:
-        log(f"ERROR: Failed to parse mdp_config.json: {e}")
+        print(f"ERROR: Failed to parse mdp_config.json: {e}")
         raise SystemExit(2)
 
+    # heartbeat_metric_name
     if not config.get("heartbeat_metric_name"):
-        log("ERROR: mdp_config.json is missing required key: heartbeat_metric_name")
+        print("ERROR: mdp_config.json is missing required key: heartbeat_metric_name")
         raise SystemExit(2)
 
+    # interval_seconds
+    if not isinstance(config.get("interval_seconds"), int) or config["interval_seconds"] <= 0:
+        print("ERROR: mdp_config.json is missing or invalid key: interval_seconds (must be a positive integer)")
+        raise SystemExit(2)
+
+    # logging section
+    log_cfg = config.get("logging")
+    if not isinstance(log_cfg, dict):
+        print("ERROR: mdp_config.json is missing required section: logging")
+        raise SystemExit(2)
+    for key in ("level", "max_bytes", "backup_count"):
+        if log_cfg.get(key) is None:
+            print(f"ERROR: mdp_config.json logging section is missing required key: {key}")
+            raise SystemExit(2)
+    valid_levels = ("DEBUG", "INFO", "WARNING", "ERROR")
+    if log_cfg["level"].upper() not in valid_levels:
+        print(f"ERROR: mdp_config.json logging.level must be one of: {', '.join(valid_levels)}")
+        raise SystemExit(2)
+
+    # mdp_scripts
     scripts = config.get("mdp_scripts")
     if not isinstance(scripts, list) or not scripts:
-        log(f"ERROR: 'mdp_scripts' key missing or empty in mdp_config.json")
+        print("ERROR: 'mdp_scripts' key missing or empty in mdp_config.json")
         raise SystemExit(2)
 
     for i, entry in enumerate(scripts):
         for field in ("script", "metric_name", "enabled"):
             if field not in entry:
-                log(f"ERROR: mdp_scripts entry {i} is missing field '{field}'")
+                print(f"ERROR: mdp_scripts entry {i} is missing field '{field}'")
                 raise SystemExit(2)
         if entry["enabled"] not in ("y", "n"):
-            log(f"ERROR: mdp_scripts entry {i} ('{entry['script']}') has invalid 'enabled' value: "
-                f"'{entry['enabled']}'. Must be 'y' or 'n'.")
+            print(f"ERROR: mdp_scripts entry {i} ('{entry['script']}') has invalid "
+                  f"'enabled' value: '{entry['enabled']}'. Must be 'y' or 'n'.")
             raise SystemExit(2)
 
     return config
@@ -154,14 +243,14 @@ def _resolve_env() -> str:
     hostname = os.uname().nodename
 
     if not os.path.exists(ENV_CONFIG_PATH):
-        log(f"ERROR: env_config.json not found: {ENV_CONFIG_PATH}")
+        print(f"ERROR: env_config.json not found: {ENV_CONFIG_PATH}")
         raise SystemExit(2)
 
     try:
         with open(ENV_CONFIG_PATH, "r") as f:
             config = json.load(f)
     except Exception as e:
-        log(f"ERROR: Failed to parse env_config.json: {e}")
+        print(f"ERROR: Failed to parse env_config.json: {e}")
         raise SystemExit(2)
 
     for entry in config.get("env_map", []):
@@ -169,7 +258,7 @@ def _resolve_env() -> str:
             return entry["env"]
 
     # Hostname not in map — use hostname as the env label (intentional fallback)
-    log(f"WARNING: hostname '{hostname}' not found in env_config.json env_map — using hostname as env label")
+    print(f"WARNING: hostname '{hostname}' not found in env_config.json env_map — using hostname as env label")
     return hostname
 
 
@@ -199,7 +288,7 @@ def get_metric_name(caller_file: str) -> str:
         if entry["script"] == script_name:
             return entry["metric_name"]
 
-    log(f"ERROR: Script '{script_name}' not found in mdp_config.json")
+    log_error(f"Script '{script_name}' not found in mdp_config.json")
     raise SystemExit(2)
 
 
@@ -209,6 +298,19 @@ def get_heartbeat_metric_name() -> str:
     Raises SystemExit(2) if the config is missing or the key is absent.
     """
     return _load_mdp_config()["heartbeat_metric_name"]
+
+
+def get_service_config() -> Dict:
+    """
+    Return the service-level config values from mdp_config.json:
+    interval_seconds, logging, heartbeat_metric_name.
+    """
+    cfg = _load_mdp_config()
+    return {
+        "interval_seconds": cfg["interval_seconds"],
+        "logging":          cfg["logging"],
+        "heartbeat_metric_name": cfg["heartbeat_metric_name"],
+    }
 
 
 # ---------------------------------------------------------------------------
