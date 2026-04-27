@@ -16,12 +16,17 @@ Label contract:
   Extensible: details="k=v;k=v"
     - If details is NOT provided, it is auto-built from any remaining key=value pairs.
 
-Env vars:
-  OTEL_EXPORTER_OTLP_ENDPOINT (default: http://172.29.2.8:4317)
-  OTEL_SERVICE_NAME           (default: bm-metrics-publisher)
-  BM_EXPORT_INTERVAL_MS       (default: 1000)
+Configuration:
+  All settings are loaded exclusively from config/otel_config.json.
+  The process exits with rc=2 if the file is missing, unreadable, or incomplete.
+
+  otel_config.json required keys:
+    endpoint              OTLP/gRPC collector endpoint  (e.g. http://172.29.2.8:4317)
+    service_name          OTEL service.name resource attribute
+    export_interval_ms    Export interval in milliseconds (integer)
 """
 
+import json
 import os
 import sys
 import time
@@ -35,16 +40,51 @@ from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 
 
-DEFAULT_OTEL_ENDPOINT = "http://172.29.2.8:4317"
-DEFAULT_OTEL_SERVICE_NAME = "bm-metrics-publisher"
+# ---------------------------------------------------------------------------
+# Config loader — fail-fast, no env var fallbacks
+# ---------------------------------------------------------------------------
+_OTEL_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "otel_config.json")
+_OTEL_REQUIRED_KEYS = ("endpoint", "service_name", "export_interval_ms")
 
-EXPORT_INTERVAL_MS = int(os.environ.get("BM_EXPORT_INTERVAL_MS", "1000"))
 
-REQUIRED_STABLE = ("service", "component", "env", "vm")
-OPTIONAL_STABLE = ("status",)
+def _load_otel_config() -> Dict:
+    """
+    Load and validate config/otel_config.json.
+    Prints an error and exits with rc=2 on any failure.
+    """
+    if not os.path.exists(_OTEL_CONFIG_PATH):
+        print(f"ERROR: otel_config.json not found: {_OTEL_CONFIG_PATH}", file=sys.stderr)
+        raise SystemExit(2)
+
+    try:
+        with open(_OTEL_CONFIG_PATH, "r") as f:
+            cfg = json.load(f)
+    except Exception as e:
+        print(f"ERROR: Failed to parse otel_config.json: {e}", file=sys.stderr)
+        raise SystemExit(2)
+
+    missing = [k for k in _OTEL_REQUIRED_KEYS if cfg.get(k) is None]
+    if missing:
+        print(f"ERROR: otel_config.json is missing required key(s): {', '.join(missing)}", file=sys.stderr)
+        raise SystemExit(2)
+
+    return cfg
+
+
+_otel_cfg = _load_otel_config()
+
+OTEL_ENDPOINT    = _otel_cfg["endpoint"]
+OTEL_SERVICE_NAME = _otel_cfg["service_name"]
+EXPORT_INTERVAL_MS = int(_otel_cfg["export_interval_ms"])
+
+REQUIRED_STABLE  = ("service", "component", "env", "vm")
+OPTIONAL_STABLE  = ("status",)
 EXTENSIBLE_LABEL = "details"
 
 
+# ---------------------------------------------------------------------------
+# Label helpers
+# ---------------------------------------------------------------------------
 def parse_kv(args) -> Dict[str, str]:
     attrs: Dict[str, str] = {}
     for a in args:
@@ -84,17 +124,16 @@ def normalize_labels(attrs_in: Dict[str, str]) -> Dict[str, str]:
     return out
 
 
+# ---------------------------------------------------------------------------
+# OTEL provider setup
+# ---------------------------------------------------------------------------
 def setup_provider() -> MeterProvider:
-    endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", DEFAULT_OTEL_ENDPOINT)
-    otel_service_name = os.environ.get("OTEL_SERVICE_NAME", DEFAULT_OTEL_SERVICE_NAME)
-    hostname = os.uname().nodename
-
     resource = Resource.create({
-        "service.name": otel_service_name,
-        "host.name": hostname,
+        "service.name": OTEL_SERVICE_NAME,
+        "host.name": os.uname().nodename,
     })
 
-    exporter = OTLPMetricExporter(endpoint=endpoint, insecure=True)
+    exporter = OTLPMetricExporter(endpoint=OTEL_ENDPOINT, insecure=True)
     reader = PeriodicExportingMetricReader(exporter, export_interval_millis=EXPORT_INTERVAL_MS)
 
     provider = MeterProvider(resource=resource, metric_readers=[reader])
@@ -102,6 +141,9 @@ def setup_provider() -> MeterProvider:
     return provider
 
 
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 def usage() -> int:
     print(__doc__.strip())
     return 2
