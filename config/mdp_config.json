@@ -1,4 +1,5 @@
 {
+  "heartbeat_metric_name": "bm_poc_monitoring_heartbeat",
   "mdp_scripts": [
     { "script": "mdp_tsm_status.py", "metric_name": "bm_poc_tsm_status", "enabled": "y"    },
     { "script": "mdp_concurrent_users.py", "metric_name": "bm_poc_concurrent_users", "enabled": "y"    },
