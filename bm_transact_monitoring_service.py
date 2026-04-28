@@ -41,14 +41,16 @@ from bm_transact_lib import (
     audit, log, log_warning, log_error,
     publish_gauge, build_base_labels,
     _load_config, get_service_config, setup_logging,
+    _logger,
 )
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MDP_DIR    = os.path.join(SCRIPT_DIR, "mdp")
 
-# Matches a trailing [filename.py] appended by MDP scripts when run standalone.
-# Stripped here since the service already logs the script name as prefix.
-_TRAILING_SCRIPT_NAME = re.compile(r'\s*\[[^\]]+\.py\]\s*$')
+# Strips the leading [script_name.py] prefix that MDP child processes emit
+# (e.g. "[mdp_cpu_usage_pct.py] message" → "message").
+# The service re-logs with its own [MDP] [script_name] formatting.
+_LEADING_SCRIPT_PREFIX = re.compile(r'^\s*\[[^\]]+\.py\]\s*')
 
 # ---------------------------------------------------------------------------
 # Graceful shutdown
@@ -83,15 +85,15 @@ def run_mdp(entry: Dict) -> int:
             capture_output=True,
             text=True,
         )
-        # Strip trailing [script_name.py] — redundant since prefix already shows it
+        # Strip leading [script_name.py] emitted by child process; service re-adds [MDP] [script_name]
         for line in result.stdout.splitlines():
             if line.strip():
-                clean = _TRAILING_SCRIPT_NAME.sub('', line.strip())
-                log(clean, prefix=script_name)
+                clean = _LEADING_SCRIPT_PREFIX.sub('', line.strip())
+                _logger.info("[MDP] [%s] %s", script_name, clean)
         for line in result.stderr.splitlines():
             if line.strip():
-                clean = _TRAILING_SCRIPT_NAME.sub('', line.strip())
-                log_error(clean, prefix=script_name)
+                clean = _LEADING_SCRIPT_PREFIX.sub('', line.strip())
+                _logger.error("[MDP] [%s] %s", script_name, clean)
 
         if result.returncode == 0:
             log(f"{script_name} completed (exit_code=0)", prefix="MONITOR")
