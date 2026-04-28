@@ -78,14 +78,14 @@ def run_mdp(entry: Dict) -> int:
             capture_output=True,
             text=True,
         )
-        # MDP output is already formatted by the child process — print it
-        # directly so the service logger does not double-wrap it
+        # MDP output is plain text (no timestamp/level) — route through the
+        # logger so it gets the service formatter applied once, cleanly
         for line in result.stdout.splitlines():
             if line.strip():
-                print(line.strip())
+                log(line.strip(), prefix=script_name)
         for line in result.stderr.splitlines():
             if line.strip():
-                print(line.strip(), file=sys.stderr)
+                log_error(line.strip(), prefix=script_name)
 
         if result.returncode == 0:
             log(f"{script_name} completed (exit_code=0)", prefix="MONITOR")
