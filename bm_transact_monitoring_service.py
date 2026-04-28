@@ -78,14 +78,14 @@ def run_mdp(entry: Dict) -> int:
             capture_output=True,
             text=True,
         )
-        # Log stdout line by line under the MDP's own name as prefix
+        # MDP output is already formatted by the child process — print it
+        # directly so the service logger does not double-wrap it
         for line in result.stdout.splitlines():
             if line.strip():
-                log(line.strip(), prefix=script_name)
-        # Log stderr as errors
+                print(line.strip())
         for line in result.stderr.splitlines():
             if line.strip():
-                log_error(line.strip(), prefix=script_name)
+                print(line.strip(), file=sys.stderr)
 
         if result.returncode == 0:
             log(f"{script_name} completed (exit_code=0)", prefix="MONITOR")
