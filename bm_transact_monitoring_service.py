@@ -47,10 +47,12 @@ from bm_transact_lib import (
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MDP_DIR    = os.path.join(SCRIPT_DIR, "mdp")
 
-# Strips the leading [script_name.py] prefix that MDP child processes emit
-# (e.g. "[mdp_cpu_usage_pct.py] message" → "message").
+# Strips all leading bracket-tags that MDP child processes emit, e.g.:
+#   "[mdp_cpu_usage_pct.py] [MDP] message" → "message"
+#   "[MDP] message"                         → "message"
+#   "[WARNING] [MDP] message"               → "message"
 # The service re-logs with its own [MDP] [script_name] formatting.
-_LEADING_SCRIPT_PREFIX = re.compile(r'^\s*\[[^\]]+\.py\]\s*')
+_LEADING_SCRIPT_PREFIX = re.compile(r'^(\s*\[[^\]]*\]\s*)+')
 
 # ---------------------------------------------------------------------------
 # Graceful shutdown
