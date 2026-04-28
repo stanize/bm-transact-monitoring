@@ -120,9 +120,9 @@ def log(msg: str, prefix: str = "MDP") -> None:
     if _has_handlers():
         _logger.info("[%s] %s", prefix, msg)
     else:
-        # Child process — format includes script name for standalone runs
-        # and is captured as-is by the service
-        print(f"[MDP] [{prefix}] {msg}")
+        # Child process — when run standalone, include script name for context.
+        # When captured by the service, the service adds [MDP] [script_name] itself.
+        print(f"[{prefix}] {msg}")
       
 
 def log_warning(msg: str, prefix: str = "MDP") -> None:
