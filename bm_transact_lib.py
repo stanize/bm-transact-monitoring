@@ -105,22 +105,39 @@ def setup_logging(level_name: str, max_bytes: int, backup_count: int) -> None:
 
 # ---------------------------------------------------------------------------
 # Logging helpers
+#
+# MDP scripts run as child processes — setup_logging() is never called in
+# their process, so _logger has no handlers. In that case we fall back to
+# print() so the output is captured by the parent's subprocess.run() and
+# fed into the service log file.
 # ---------------------------------------------------------------------------
+def _has_handlers() -> bool:
+    """Return True if setup_logging() has been called in this process."""
+    return bool(logging.getLogger("bm_transact").handlers)
+
+
 def log(msg: str, prefix: str = "MDP") -> None:
-    """
-    General log — routes through Python logging at INFO level.
-    prefix is embedded in the message to preserve existing call signatures
-    across all MDP scripts.
-    """
-    _logger.info("[%s] %s", prefix, msg)
+    if _has_handlers():
+        _logger.info("[%s] %s", prefix, msg)
+    else:
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{ts}] [INFO   ] [{prefix}] {msg}")
 
 
 def log_warning(msg: str, prefix: str = "MDP") -> None:
-    _logger.warning("[%s] %s", prefix, msg)
+    if _has_handlers():
+        _logger.warning("[%s] %s", prefix, msg)
+    else:
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{ts}] [WARNING] [{prefix}] {msg}")
 
 
 def log_error(msg: str, prefix: str = "MDP") -> None:
-    _logger.error("[%s] %s", prefix, msg)
+    if _has_handlers():
+        _logger.error("[%s] %s", prefix, msg)
+    else:
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{ts}] [ERROR  ] [{prefix}] {msg}")
 
 
 # ---------------------------------------------------------------------------
@@ -307,8 +324,8 @@ def get_service_config() -> Dict:
     """
     cfg = _load_mdp_config()
     return {
-        "interval_seconds": cfg["interval_seconds"],
-        "logging":          cfg["logging"],
+        "interval_seconds":      cfg["interval_seconds"],
+        "logging":               cfg["logging"],
         "heartbeat_metric_name": cfg["heartbeat_metric_name"],
     }
 
