@@ -47,7 +47,7 @@ All checks must pass before proceeding. Review `logs/bm-preflight.log` if anythi
 ## 4. Install the systemd service
 
 ```bash
-sudo cp transact-monitoring.service /etc/systemd/system/
+sudo cp /mnt/temenos/T24/bnk/t24scripts/transact_monitoring/transact-monitoring.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable transact-monitoring
 sudo systemctl start transact-monitoring
