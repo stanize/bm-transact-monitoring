@@ -88,10 +88,10 @@ def run_mdp(entry: Dict) -> int:
                 log_error(line.strip(), prefix=script_name)
 
         if result.returncode == 0:
-            log(f"{script_name} completed (rc=0)", prefix="MONITOR")
+            log(f"{script_name} completed (exit_code=0)", prefix="MONITOR")
             return 0
         else:
-            log_error(f"MDP FAILED: {script_name} rc={result.returncode}", prefix="MONITOR")
+            log_error(f"MDP FAILED: {script_name} exit_code={result.returncode}", prefix="MONITOR")
             return result.returncode or 2
 
     except Exception as e:
