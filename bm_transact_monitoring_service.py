@@ -30,6 +30,7 @@ Usage:
 """
 
 import os
+import re
 import signal
 import sys
 import time
@@ -44,6 +45,10 @@ from bm_transact_lib import (
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MDP_DIR    = os.path.join(SCRIPT_DIR, "mdp")
+
+# Matches a trailing [filename.py] appended by MDP scripts when run standalone.
+# Stripped here since the service already logs the script name as prefix.
+_TRAILING_SCRIPT_NAME = re.compile(r'\s*\[[^\]]+\.py\]\s*$')
 
 # ---------------------------------------------------------------------------
 # Graceful shutdown
@@ -78,14 +83,15 @@ def run_mdp(entry: Dict) -> int:
             capture_output=True,
             text=True,
         )
-        # MDP output is plain text (no timestamp/level) — route through the
-        # logger so it gets the service formatter applied once, cleanly
+        # Strip trailing [script_name.py] — redundant since prefix already shows it
         for line in result.stdout.splitlines():
             if line.strip():
-                log(line.strip(), prefix=script_name)
+                clean = _TRAILING_SCRIPT_NAME.sub('', line.strip())
+                log(clean, prefix=script_name)
         for line in result.stderr.splitlines():
             if line.strip():
-                log_error(line.strip(), prefix=script_name)
+                clean = _TRAILING_SCRIPT_NAME.sub('', line.strip())
+                log_error(clean, prefix=script_name)
 
         if result.returncode == 0:
             log(f"{script_name} completed (exit_code=0)", prefix="MONITOR")
