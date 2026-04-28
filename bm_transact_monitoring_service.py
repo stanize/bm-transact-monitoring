@@ -89,11 +89,11 @@ def run_mdp(entry: Dict) -> int:
         for line in result.stdout.splitlines():
             if line.strip():
                 clean = _LEADING_SCRIPT_PREFIX.sub('', line.strip())
-                _logger.info("[MDP] [%s] %s", script_name, clean)
+                log(f"[{script_name}] {clean}", prefix="MDP")
         for line in result.stderr.splitlines():
             if line.strip():
                 clean = _LEADING_SCRIPT_PREFIX.sub('', line.strip())
-                _logger.error("[MDP] [%s] %s", script_name, clean)
+                log_error(f"[{script_name}] {clean}", prefix="MDP")
 
         if result.returncode == 0:
             log(f"{script_name} completed (exit_code=0)", prefix="MONITOR")
