@@ -96,7 +96,6 @@ def setup_logging(level_name: str, max_bytes: int, backup_count: int) -> None:
     stdout_handler.setFormatter(formatter)
     stdout_handler.setLevel(level)
 
-    # AUDIT always goes to both — handled by level being above all filters
     root = logging.getLogger("bm_transact")
     root.setLevel(logging.DEBUG)  # let handlers decide what to filter
     root.addHandler(file_handler)
@@ -108,8 +107,9 @@ def setup_logging(level_name: str, max_bytes: int, backup_count: int) -> None:
 #
 # MDP scripts run as child processes — setup_logging() is never called in
 # their process, so _logger has no handlers. In that case we fall back to
-# print() so the output is captured by the parent's subprocess.run() and
-# fed into the service log file.
+# print() with plain text only (no timestamp, no level prefix) so the
+# parent service can capture it and log it through its own formatter
+# without double-wrapping.
 # ---------------------------------------------------------------------------
 def _has_handlers() -> bool:
     """Return True if setup_logging() has been called in this process."""
@@ -120,24 +120,21 @@ def log(msg: str, prefix: str = "MDP") -> None:
     if _has_handlers():
         _logger.info("[%s] %s", prefix, msg)
     else:
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{ts}] [INFO   ] [{prefix}] {msg}")
+        print(f"[{prefix}] {msg}")
 
 
 def log_warning(msg: str, prefix: str = "MDP") -> None:
     if _has_handlers():
         _logger.warning("[%s] %s", prefix, msg)
     else:
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{ts}] [WARNING] [{prefix}] {msg}")
+        print(f"[WARNING] [{prefix}] {msg}")
 
 
 def log_error(msg: str, prefix: str = "MDP") -> None:
     if _has_handlers():
         _logger.error("[%s] %s", prefix, msg)
     else:
-        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{ts}] [ERROR  ] [{prefix}] {msg}")
+        print(f"[ERROR] [{prefix}] {msg}")
 
 
 # ---------------------------------------------------------------------------
