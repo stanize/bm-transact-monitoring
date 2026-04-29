@@ -75,6 +75,24 @@ You should see `[AUDIT]` entries for each cycle starting and finishing every 5 m
 
 ---
 
+## Grant transactuser sudo access
+
+To allow `transactuser` to run service commands without a password, run:
+
+```bash
+echo 'transactuser ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop transact-monitoring, /usr/bin/systemctl restart transact-monitoring, /usr/bin/systemctl disable transact-monitoring, /usr/bin/systemctl status transact-monitoring, /usr/bin/journalctl -u transact-monitoring *' | sudo tee /etc/sudoers.d/transact-monitoring >/dev/null
+```
+
+Then verify the syntax is valid:
+
+```bash
+sudo visudo -cf /etc/sudoers.d/transact-monitoring
+```
+
+To revoke access later: `sudo rm /etc/sudoers.d/transact-monitoring`
+
+---
+
 ## Common Commands
 
 ```bash
