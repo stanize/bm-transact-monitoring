@@ -108,6 +108,9 @@ sudo systemctl restart transact-monitoring
 # Disable from starting on boot
 sudo systemctl disable transact-monitoring
 
+# Check log file
+tail -f /mnt/temenos/T24/bnk/t24scripts/transact_monitoring/logs/bm-transact-monitoring.log
+
 # Check recent logs
 journalctl -u transact-monitoring --since "1 hour ago"
 ```
