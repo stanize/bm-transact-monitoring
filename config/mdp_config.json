@@ -1,5 +1,5 @@
 {
-  "heartbeat_metric_name": "bm_transact_monitoring_heartbeat",
+  "heartbeat_metric_name": "tmn_transact_monitoring_heartbeat",
   "interval_seconds": 60,
   "logging": {
     "level": "INFO",
@@ -7,20 +7,20 @@
     "backup_count": 7
   },
   "mdp_scripts": [
-    { "script": "mdp_tsm_status.py",            "metric_name": "bm_transact_tsm_status",              "enabled": "y" },
-    { "script": "mdp_concurrent_users.py",      "metric_name": "bm_transact_concurrent_users",        "enabled": "y" },
-    { "script": "mdp_license_expiry_days.py",   "metric_name": "bm_transact_license_days_remaining",  "enabled": "y" },
-    { "script": "mdp_jboss_status.py",          "metric_name": "bm_transact_jboss_status",            "enabled": "y" },
-    { "script": "mdp_tsa_services_running.py",  "metric_name": "bm_transact_tsa_services_running",    "enabled": "y" },
-    { "script": "mdp_business_date.py",         "metric_name": "bm_transact_business_date",           "enabled": "y" },
-    { "script": "mdp_transact_release.py",      "metric_name": "bm_transact_release",                 "enabled": "y" },
-    { "script": "mdp_https_availability.py",    "metric_name": "bm_transact_https_availability",      "enabled": "y" },
-    { "script": "mdp_eod_error_count.py",       "metric_name": "bm_transact_eod_error_count",         "enabled": "y" },
-    { "script": "mdp_cob_progress.py",          "metric_name": "bm_transact_cob_progress",            "enabled": "y" },
-    { "script": "mdp_cob_duration.py",          "metric_name": "bm_transact_cob_duration",            "enabled": "y" },
-    { "script": "mdp_memory_used_mb.py",        "metric_name": "bm_transact_memory_used_mb",          "enabled": "y" },
-    { "script": "mdp_memory_total_mb.py",       "metric_name": "bm_transact_memory_total_mb",         "enabled": "y" },
-    { "script": "mdp_cpu_usage_pct.py",         "metric_name": "bm_transact_cpu_usage_pct",           "enabled": "y" },
-    { "script": "mdp_ctmag_status.py",          "metric_name": "bm_transact_ctmag_status",            "enabled": "y" }
+    { "script": "mdp_tsm_status.py",            "metric_name": "tmn_transact_tsm_status",              "enabled": "y" },
+    { "script": "mdp_concurrent_users.py",      "metric_name": "tmn_transact_concurrent_users",        "enabled": "y" },
+    { "script": "mdp_license_expiry_days.py",   "metric_name": "tmn_transact_license_days_remaining",  "enabled": "y" },
+    { "script": "mdp_jboss_status.py",          "metric_name": "tmn_transact_jboss_status",            "enabled": "y" },
+    { "script": "mdp_tsa_services_running.py",  "metric_name": "tmn_transact_tsa_services_running",    "enabled": "y" },
+    { "script": "mdp_business_date.py",         "metric_name": "tmn_transact_business_date",           "enabled": "y" },
+    { "script": "mdp_transact_release.py",      "metric_name": "tmn_transact_release",                 "enabled": "y" },
+    { "script": "mdp_https_availability.py",    "metric_name": "tmn_transact_https_availability",      "enabled": "y" },
+    { "script": "mdp_eod_error_count.py",       "metric_name": "tmn_transact_eod_error_count",         "enabled": "y" },
+    { "script": "mdp_cob_progress.py",          "metric_name": "tmn_transact_cob_progress",            "enabled": "y" },
+    { "script": "mdp_cob_duration.py",          "metric_name": "tmn_transact_cob_duration",            "enabled": "y" },
+    { "script": "mdp_memory_used_mb.py",        "metric_name": "tmn_transact_memory_used_mb",          "enabled": "y" },
+    { "script": "mdp_memory_total_mb.py",       "metric_name": "tmn_transact_memory_total_mb",         "enabled": "y" },
+    { "script": "mdp_cpu_usage_pct.py",         "metric_name": "tmn_transact_cpu_usage_pct",           "enabled": "y" },
+    { "script": "mdp_ctmag_status.py",          "metric_name": "tmn_transact_ctmag_status",            "enabled": "y" }
   ]
 }
