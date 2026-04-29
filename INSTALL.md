@@ -96,6 +96,9 @@ To revoke access later: `sudo rm /etc/sudoers.d/transact-monitoring`
 ## Common Commands
 
 ```bash
+# Check service status
+sudo systemctl status transact-monitoring
+
 # Stop the service
 sudo systemctl stop transact-monitoring
 
